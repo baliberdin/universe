@@ -32,11 +32,11 @@ class Vector {
 
 	static resultant(vList){
 		if(vList.constructor === Array){
-			var v = new Vector(0,0);
+			var v = vList[0];
 
-			for(var i=0;i<vList.length; i++){
+			for(var i=1;i<vList.length; i++){
 				if(vList[i].constructor === Vector){
-					v = Vector.sum(v,vList[i]);
+					v = Vector.sum(vList[i],v);
 				}else{
 					throw {error:-4,message:"Array List element["+i+"] is not a Vector"};
 				}
@@ -124,13 +124,17 @@ class Particle {
 		this.old_w = this.w;
 		this.old_h = this.h;
 
-		this.ctx.strokeStyle = "#ff0000";
-		this.ctx.lineWidth=1;
-		this.ctx.beginPath();
-		this.ctx.moveTo(this.w, this.h);
-		var lv = Vector.unitVector(this.inertia);
-		this.ctx.lineTo(this.w + lv.x*this.r*2, this.h + lv.y*this.r*2);
-		this.ctx.stroke();
+		// this.ctx.strokeStyle = "#ff0000";
+		// this.ctx.lineWidth=1;
+		// this.ctx.beginPath();
+		// this.ctx.moveTo(this.w, this.h);
+		// var lv = Vector.unitVector(this.inertia);
+		// this.ctx.lineTo(this.w + lv.x*Vector.modulus(this.inertia)*10000, this.h + lv.y*Vector.modulus(this.inertia)*10000);
+		// this.ctx.stroke();
+
+		// this.ctx.font = "10px Arial";
+		// this.ctx.fillText("A: "+Vector.modulus(this.inertia),this.w+this.r+2,this.h+this.r+2);
+		// this.ctx.fillText("V: "+this.velocity,this.w+this.r+2,this.h+this.r+16);
 	};
 
 	force(){
@@ -161,7 +165,7 @@ $(document).ready(function(){
 
 	var ctx = scene.getContext("2d");
 
-	for(var i=0;i<1000;i++){
+	for(var i=0;i<400;i++){
 
 		var p = new Particle(i);
 		
@@ -181,6 +185,37 @@ $(document).ready(function(){
 		p.ctx = ctx;
 		particles.push(p);	
 	}
+
+	// var p = new Particle(0);
+	// p.ctx = ctx;
+	// p.r = 30;
+	// p.charge = 50;
+	// p.w = width/2;
+	// p.h = height/2;
+
+	// particles.push(p);
+
+
+	// var p2 = new Particle(1);
+	// p2.ctx = ctx;
+	// p2.r = 5;
+	// p2.charge = p2.r * 0.00001;
+	// p2.w = width/2 -100;
+	// p2.h = height/2 - 300;
+	// p2.inertia = new Vector(-1,1);
+	// //p2.velocity = 0;
+
+	// particles.push(p2);
+
+
+	// var p3 = new Particle(0);
+	// p3.ctx = ctx;
+	// p3.r = 30;
+	// p3.charge = 50;
+	// p3.w = width/5;
+	// p3.h = (height/2);
+
+	// particles.push(p3);
 
 	setInterval(gravityAction,80);
 	//setInterval(info,1000);
@@ -223,12 +258,9 @@ function gravityAction(){
 	for(var i=0;i<particles.length; i++){
 		var p = particles[i];
 		var vForce = calculateForces(p);
-
-		if(p.inertia != undefined){
-			p.inertia = Vector.sum(p.inertia,vForce);	
-		}else{
-			p.inertia = vForce;
-		}
+		//p.inertia = Vector.sum(Vector.modulusProduct(p.inertia,-1), p.inertia);
+		//p.inertia = Vector.sum(vForce, p.inertia);
+		p.inertia = vForce;
 		
 		calculateDisplacement(p);
 	}
@@ -259,7 +291,9 @@ function calculateForcesBetweenParticles(p1,p2){
 	var mDistance = Vector.modulus(vDistance);
 	var force = 0;
 	if(mDistance < 0.0001){
-		force = 9 * ((p2.force())/Math.pow(1,2));
+		particles.remove(p1);
+		particles.remove(p2);
+		//force = 9 * ((p2.force())/Math.pow(1,2));
 	}else{
 		force = 9 * ((p2.force())/Math.pow(mDistance,2));
 	}
@@ -270,58 +304,13 @@ function calculateForcesBetweenParticles(p1,p2){
 }
 
 function calculateDisplacement(p){
-	var s = p.velocity*t + 0.5 * Vector.modulus(p.inertia) * (t*t); // + (p.r*0.005);
-
+	var a = Vector.modulus(p.inertia);
+	var s = p.velocity*t + 0.5 * a * (t*t); // + (p.r*0.005);
 	var displacement = Vector.modulusProduct(Vector.unitVector(p.inertia), s);
+	var velocity = p.velocity+a*t;
+	p.velocity = velocity;
 
-	if(false){
-		for(var i=0;i<particles.length; i++){
-			var pd = particles[i];
-			if(p.id == pd.id)continue;
-
-			var vpd = new Vector(p.w, p.h, pd.w, pd.h);
-
-			// If particles are close enough to colide
-			if(Vector.modulus(vpd) <= (pd.r + p.r) ){
-				//console.log(Vector.modulus(vpd));
-
-				//if(p.inertia != undefined && pd.inertia != undefined){
-					// var pfs = [];
-					// var pdfs = [];
-
-					// pfs.push(p.inertia);
-					// pfs.push(calculateForcesBetweenParticles(p,pd));
-					// p.inertia = Vector.resultant(pfs);
-
-					// pdfs.push(pd.inertia);
-					// pdfs.push(calculateForcesBetweenParticles(pd,p));
-					// pd.inertia = Vector.resultant(pdfs);					
-
-						p.inertia = Vector.sum(p.inertia, Vector.modulusProduct(pd.inertia, -1));
-						pd.inertia = Vector.sum(pd.inertia, Vector.modulusProduct(p.inertia, -1));
-				//}
-
-				// if(p.inertia != undefined){
-				// 	p.inertia = Vector.modulusProduct(p.inertia, -1);
-
-				// 	if(pd.inertia != undefined){
-				// 		pd.inertia = Vector.modulusProduct(pd.inertia, -1);
-				// 	}
-				// 	// }else{
-				// 	// 	pd.inertia = Vector.modulusProduct(p.inertia,-1);
-				// 	// }
-
-				// }
-				// //break;
-			}
-		}
-
-	}
-
-	var displacement = Vector.modulusProduct(Vector.unitVector(p.inertia), s/4);	
 	p.w = p.w + displacement.x;
 	p.h = p.h + displacement.y;
 	p.draw();
 }
-
-
