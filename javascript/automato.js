@@ -1,4 +1,7 @@
+var app;
+var started = false;
 var cells = [[]];
+
 
 class Automato {
 
@@ -8,28 +11,43 @@ class Automato {
 		this.y = y;
 		this.r = r;
 		this.alive = alive;
+		this.neighborhood = 0;
+		this.color = "#000";
 	};
 
 	isAlive(){
 		return this.alive;
 	};
 
-	kill(n){
-		if(this.alive && (n < 2 || n > 3) ){
+	checkNeighborhood(){
+		if(this.alive && (this.neighborhood < 2 || this.neighborhood > 3) ){
 			this.alive = false;
-		}else if(n == 3){
+		}else if(this.neighborhood == 3){
 			this.alive = true;
 		}
 	};
 
-	draw(x,y){
+	create(x,y){
+		//this.checkNeighborhood();
 		if(this.alive){
-			this.ctx.fillStyle = "#000000";
+			this.ctx.fillStyle = this.color;
 		}else{
 			this.ctx.fillStyle = "#ffffff";
 		}
 		
-		this.ctx.fillRect(y*this.r,x*this.r,this.r,this.r);
+		this.ctx.fillRect(y*this.r+1,x*this.r+1,this.r-2,this.r-2);
+		this.ctx.fill();
+	};
+
+	draw(x,y){
+		this.checkNeighborhood();
+		if(this.alive){
+			this.ctx.fillStyle = this.color;
+		}else{
+			this.ctx.fillStyle = "#ffffff";
+		}
+		
+		this.ctx.fillRect(y*this.r+1,x*this.r+1,this.r-2,this.r-2);
 		this.ctx.fill();
 	}
 
@@ -50,55 +68,48 @@ $(document).ready(function(){
 
 	var width = window.innerWidth;
 	var height = window.innerHeight;
-	var ctxw = width -4;
-	var ctxh = height -4;
+	var r = 5;
 
-	$("#universe").attr("width", width -4);
-	$("#universe").attr("height", height -4);
+	//var ctxw = width;
+	var ctxw = Math.floor(width/r)*r;
+	//var ctxh = height;
+	var ctxh = Math.floor(height/r)*r;
+	
+	$("#universe").attr("width", ctxw);
+	$("#universe").attr("height", ctxh);
 
 	var ctx = scene.getContext("2d");
+	drawGrid(ctx,r, ctxw, ctxh);
+	
+	var rainbow = new Rainbow();
+	rainbow.setNumberRange(0, 100);
+	rainbow.setSpectrum('black', 'red', 'orange', 'yellow');
 
-	var r = 10;
 	buildAllCells(ctx,ctxh, ctxw, r);
 	for(var i=0; i< ctxh/r; i++){
 		cells[i] = new Array();
 		for(var j=0; j<ctxw/r; j++){
 			var x = j*r;
 			var y = i*r;
-			var a = new Automato(ctx, x, y, r, randBoolean());
-			a.draw(i,j);
+			var a = new Automato(ctx, x, y, r, randBoolean(20));
+			a.create(i,j);
 			cells[i].push(a);
 		}
 	}
 
-	// cells[0] = new Array();
-	// cells[1] = new Array();
-	// //cells[2] = new Array();
+	window.addEventListener("keydown",function(e,k){
+		if(e.keyCode == 13){
 
-	// var p = 20;
-
-	//  cells[0+p][0+p] = new Automato(ctx, 0*r, 0*r, r, false) ;
-	//  cells[0+p][1+p] = new Automato(ctx, 1*r, 0*r, r, false) ;
-	//  cells[0+p][2+p] = new Automato(ctx, 2*r, 0*r, r, true) ;
-	//  cells[1+p][0+p] = new Automato(ctx, 0*r, 1*r, r, true) ;
-	//  cells[1+p][1+p] = new Automato(ctx, 1*r, 1*r, r, false) ;
-	//  cells[1+p][2+p] = new Automato(ctx, 2*r, 1*r, r, true);
-
-	//  cells[2+p][0+p] = new Automato(ctx, 0*r, 2*r, r, false) ;
-	//  cells[2+p][1+p] = new Automato(ctx, 1*r, 2*r, r, true) ;
-	//  cells[2+p][2+p] = new Automato(ctx, 2*r, 2*r, r, true) ;
-
-	//  for(var i=0; i< cells.length; i++){
-	// 	for(var j=0; j< cells[i].length; j++){
-	// 		cells[i][j].draw(j,i);
-	// 	}
-	// }
-
-	//setInterval(checkCells,100);
-
-	document.addEventListener("click",function(e,k){
-		checkCells();
+			if(started == false){
+				app = setInterval(checkCells,200);		
+				started = true;
+			}else{
+				clearInterval(app);
+				started = false;
+			}
+		}
 	});
+	
 });
 
 function buildAllCells(ctx, h,w,r){
@@ -157,7 +168,7 @@ function checkCells(){
 				if(cells[i+1][j+1].alive) neighborhood++;
 			}
 
-			c.kill(neighborhood);
+			c.neighborhood = neighborhood;
 
 			//console.log("m:"+i+" n:"+j+" v:"+neighborhood);
 		}
@@ -174,6 +185,42 @@ function rand(start, end){
 	return Math.floor(Math.random() * (end - start) + end);
 }
 
-function randBoolean(){
-	return Math.round(Math.random()) == 0;
+function randBoolean(limit){
+	var str = md5(Math.floor(Math.random()*100)+"");
+	str = str.substring(28);
+
+	var d = parseInt(str, 16);
+	var d = d%100;
+	if(d < limit){
+		return true;
+	}else{
+		return false;	
+	} 
+	//return Math.round(Math.random()) == 0;
+}
+
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
+function drawGrid(ctx,r, w, h){
+	ctx.strokeStyle = "#bbb";
+	for(var i=0;i<w;i=i+r){
+		ctx.beginPath();
+		ctx.moveTo(i,0);
+		ctx.lineTo(i,h);
+		ctx.stroke();
+	}
+
+	for(var i=0;i<h;i=i+r){
+		ctx.beginPath();
+		ctx.moveTo(0,i);
+		ctx.lineTo(w,i);
+		ctx.stroke();
+	}
 }
