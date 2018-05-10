@@ -24,6 +24,9 @@ class Automato {
 			this.alive = false;
 		}else if(this.neighborhood == 3){
 			this.alive = true;
+			this.color = "#cc5555";
+		}else if(this.isAlive){
+			this.color = "#000000";
 		}
 	};
 
@@ -49,26 +52,36 @@ class Automato {
 		
 		this.ctx.fillRect(y*this.r+1,x*this.r+1,this.r-2,this.r-2);
 		this.ctx.fill();
-	}
+	};
 
-	alert(){
-		if(this.alive){
-			this.ctx.fillStyle = "#ff0000";
-		}else{
-			this.ctx.fillStyle = "#ffffff";
-		}
+	// alert(){
+	// 	if(this.alive){
+	// 		this.ctx.fillStyle = "#ff0000";
+	// 	}else{
+	// 		this.ctx.fillStyle = "#ffffff";
+	// 	}
 		
-		this.ctx.fillRect(y*this.r,x*this.r,this.r,this.r);
-		this.ctx.fill();
+	// 	this.ctx.fillRect(y*this.r,x*this.r,this.r,this.r);
+	// 	this.ctx.fill();
+	// };
+
+	revert(x,y){
+		if(this.alive){
+			this.alive = false;
+		}else{
+			this.alive = true;
+		}
+
+		this.create(x,y);
 	}
 }
 
 $(document).ready(function(){
 	var scene = document.getElementById("universe");
 
-	var width = window.innerWidth;
-	var height = window.innerHeight;
-	var r = 5;
+	var width = window.innerWidth/6*4;
+	var height = window.innerHeight/5*4;
+	var r = 10;
 
 	//var ctxw = width;
 	var ctxw = Math.floor(width/r)*r;
@@ -86,37 +99,77 @@ $(document).ready(function(){
 	rainbow.setSpectrum('black', 'red', 'orange', 'yellow');
 
 	buildAllCells(ctx,ctxh, ctxw, r);
-	for(var i=0; i< ctxh/r; i++){
-		cells[i] = new Array();
-		for(var j=0; j<ctxw/r; j++){
-			var x = j*r;
-			var y = i*r;
-			var a = new Automato(ctx, x, y, r, randBoolean(20));
-			a.create(i,j);
-			cells[i].push(a);
-		}
-	}
+	buildRandomCells();
 
 	window.addEventListener("keydown",function(e,k){
 		if(e.keyCode == 13){
+			startStop();
+		}
+	});
 
-			if(started == false){
-				app = setInterval(checkCells,200);		
-				started = true;
-			}else{
-				clearInterval(app);
-				started = false;
-			}
+	scene.addEventListener("click",function(e,k){
+		//console.log(e);
+		var x = Math.floor(e.layerX/r);
+		var y = Math.floor(e.layerY/r);
+
+		cells[y][x].revert(y,x);
+
+		// console.log(x);
+		// console.log(y);
+	});
+
+	$("#bt_mode").click(function(){
+		if($(this).attr("data-mode") == "manual"){
+			$("#bt_mode").html("Manual");
+			$(this).attr("data-mode","auto");
+			console.log("modo auto");
+			buildRandomCells();
+
+		}else{
+			$("#bt_mode").html("Auto");	
+			$(this).attr("data-mode","manual");
+			console.log("modo manual");
+			clearInterval(app);
+			started = false;
+			resetAllCells();
 		}
 	});
 	
 });
+
+function buildRandomCells(){
+	for(var i=0; i< cells.length; i++){
+		for(var j=0; j<cells[i].length; j++){
+			cells[i][j].alive = randBoolean(10);
+			cells[i][j].create(i,j);
+		}
+	}
+}
+
+function startStop(){
+	if(started == false){
+		app = setInterval(checkCells,100);		
+		started = true;
+	}else{
+		clearInterval(app);
+		started = false;
+	}
+}
 
 function buildAllCells(ctx, h,w,r){
 	for(var i=0; i< h/r; i++){
 		cells[i] = new Array();
 		for(var j=0; j< w/r; j++){
 			cells[i].push( new Automato(ctx, j*r, i*r, r, false) );
+		}
+	}
+}
+
+function resetAllCells(){
+	for(var i=0; i< cells.length; i++){
+		for(var j=0; j< cells[i].length; j++){
+			cells[i][j].alive = false;
+			cells[i][j].create(i,j);
 		}
 	}
 }
@@ -209,15 +262,15 @@ function getRandomColor() {
 }
 
 function drawGrid(ctx,r, w, h){
-	ctx.strokeStyle = "#bbb";
-	for(var i=0;i<w;i=i+r){
+	ctx.strokeStyle = "#eee";
+	for(var i=0;i<w+1;i=i+r){
 		ctx.beginPath();
 		ctx.moveTo(i,0);
 		ctx.lineTo(i,h);
 		ctx.stroke();
 	}
 
-	for(var i=0;i<h;i=i+r){
+	for(var i=0;i<h+1;i=i+r){
 		ctx.beginPath();
 		ctx.moveTo(0,i);
 		ctx.lineTo(w,i);
