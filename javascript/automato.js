@@ -22,7 +22,7 @@ class Automato {
 	checkNeighborhood(){
 		if(this.alive && (this.neighborhood < 2 || this.neighborhood > 3) ){
 			this.alive = false;
-		}else if(this.neighborhood == 3){
+		}else if(this.neighborhood == 3 && !this.alive){
 			this.alive = true;
 			this.color = "#cc5555";
 		}else if(this.isAlive){
@@ -140,7 +140,7 @@ $(document).ready(function(){
 function buildRandomCells(){
 	for(var i=0; i< cells.length; i++){
 		for(var j=0; j<cells[i].length; j++){
-			cells[i][j].alive = randBoolean(10);
+			cells[i][j].alive = randBoolean(20);
 			cells[i][j].create(i,j);
 		}
 	}
